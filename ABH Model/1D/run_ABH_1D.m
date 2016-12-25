@@ -40,41 +40,34 @@ clear all; close all; clc;
 addpath(genpath('D:\GitHub\DPV\ABH Model'));
 % Set Default Figure Options
 set(0,'DefaultTextInterpreter','latex')
-set(0,'DefaultAxesFontSize',13)
+set(0,'DefaultAxesFontSize',14)
 
 %% Simulation Parameters
-nx      = 2^6;                                  % Number of grid points
+nx      = 2^7;                                  % Number of grid points
 nL      = 6;                                    % Length of domain
 dx      = nL/(nx-1);                            % Spatial step size
 x       = 0:dx:nL;                              % Spatial grid
 h2      = dx^2;                                 % Square of spatial step
-cfl     = 0.6;                                  % CFL number for stability
+cfl     = 0.45;                                 % CFL number for stability
 sigma   = cfl;
 dt      = sigma*dx;                             % Time step based on CFL number
-tfin    = 75;                                   % Final time
+tfin    = 90;                                   % Final time
 t       = 0.0;                                  % Current time value
 step    = 0;                                    % Current time step
 oft     = 0.15;                                 % Figure offset parameter
 %% Parameters in Model
-td      = 1e-3;                                 % T_dT_i / T_e^2Z_d ratio
-ti      = 0.125;                                % T_i/T_e ratio
-cd      = sqrt(td);                             % Dust sound velocity
-a       = 7.5;                                  % Constant in ion-drag force
-b       = 1.6;                                  % Constant in ion-drag force
-alpha0  = 2.0;                                  % Normalized dust-neutral collision frequency
-mu      = 1.5;                                  % Constant mobility
+[td, ti, cd, a, b, alpha0, mu] = getABHParam('02');
 %% Intial conditions
-nd      = 1e-3*ones(1,nx);                      % Dust density
-vd      = zeros(1,nx);                          % Dust velocity
-vi      = zeros(1,nx);                          % Ion velocity
-E       = zeros(1,nx);                          % Electrical field currency
-U_star  = zeros(2,nx);                          % Vector function contains nd, vd 
-f       = zeros(2,nx);                          % Right hand side function
+[nd, vd, vi, E, U_star, f] = getABHInit('02', nx);
 U       = [nd; vd];
 L = 1:nx-1; R = 2:nx;                           % Indicies arrays
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Loop
+% Set Figure
+% figure('color','w')
+nstep = ceil(tfin/dt);
+vR = zeros(1, nstep);
 while t<tfin
     % Compute Delta U's
     % dU = U(R)-U(L) at the cell boundaries { x_{i},x_{i+1}, ... }
@@ -104,25 +97,18 @@ while t<tfin
     nd = U_star(1,:);
     vd = U_star(2,:);  
     
-    % Compute (2)
-%     [ne, E] = runge4_solver(nL,nx,nd');
-    [ne, E] = euler1_solver(nL,nx,nd',ti);
-    E = E';
+    % Compute ne, E functions
+    [ne, E] = runge4_solver(nL,nx,nd');
+%     [ne, E] = euler1_solver(nL,nx,nd',ti);
     vi = - mu * E;
     
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Recompute U vector
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Recompute U vector according to w vector
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     f(2,:) = (a ./ (b + abs(vi).^3) - 1).*E - alpha0*vd;   
-    
-%     nu = max([abs(vd+cd) abs(vd-cd)]);
-    
-    % Update time step
-%     dt = dx*cfl/nu;
-%     t = t + dt;
-%     sigma = dt/dx;
-    
+        
+    % Update time step  
 	dU = U_star(:,R)-U_star(:,L);
     Flux = 0.5*(FL+FR - nu*dU);
   
@@ -130,57 +116,49 @@ while t<tfin
     for i = 2:nx-1
         U(:,i) = U_star(:,i) - sigma * (Flux(:,i) - Flux(:,i-1)) + dt*f(:,i);
     end   
-    %Update u matrix
-%     U(:,2:n-1) = 0.5*(U_star(:,3:n)+U_star(:,1:n-2)) - dt/(2*h)*(Flux(:,3:n) - Flux(:,1:n-2)) + dt*f(:,2:n-1);
- 
+     
     % BCs
     U(:,1)	 = U(:,2);         % Neumann condition to the left
     U(:,end) = U(:,end-1);     % Neumann condition to the right
-    
+    % Extract data
     nd = U(1,:);
     vd = U(2,:);
-    
-    % Limiting nd>1 -> nd=1
+    % Write last value of vd
+    vR(step+1) = vd(end);
+    % Limiting nd > 1 ---> nd = 1
     nd(nd>1) = 1;
       
-    % new time step
-    step = step + 1;
-    % correction
-    if t - tfin == dt, step = step - dt; end
+    % New time step
+    step = step + 1;    
     disp(['dt = ' num2str(t,'%2.2f\n') ' over ' num2str(tfin) '  step:' num2str(step)])
-    
-    
-    subplot(2,2,[3,4]); plot(x,nd,'k','LineWidth',1); 
-    xlabel('$x$'); ylabel('$n_d$'); title('$n_d(x,t$)');
-    xlim([0 nL]); ylim([-oft 1+oft])    
-    %% timer
-    text('Interpreter','latex',...
-    'String',['time step: ' num2str(step) '/' num2str(length(dt:dt:tfin))],...
-    'Position',[0.2 .6],...
-    'FontSize',10, 'color','b', 'interpreter','latex')
-%     %% time
-    text('Interpreter','latex',...
-    'String',['time: ' num2str(t,'%2.2f\n') ' : ' num2str(tfin)],...
-    'Position',[.6 .5],...
-    'FontSize',10, 'color','b', 'interpreter','latex')
 %     
-    subplot(2,2,2); plot(x,vd,'k','LineWidth',1); 
-    xlabel('$x$'); ylabel('$v_d$'); title('$v_d(x,t)$');  
-    xlim([0 nL]); 
-%     %%
-	subplot(2,2,1); plot(x,ne,x,E); %,'k','LineWidth',1); 
-    xlabel('$x$'); ylabel('$n_e,\,E$'); title('$n_e(x,t),\,E(x,t)$');
-    xlim([0 nL]); 
-    
-    
-    drawnow     
-    
-     %%
-% 	figure(313); plot(x,ne,x,E,'LineWidth',2); %,'k','LineWidth',1); 
-%     title('$n_e(x),\,E(x)$','fontsize',13, 'interpreter','latex');
-%     xlabel('$x$','fontsize',13,'interpreter','latex');
-%     ylabel('$n_e,\,E$','fontsize',13, 'interpreter','latex'); 
-%     axis([-offset nL+offset -offset max([ne' E])+offset])
-        
- 
+%     %% Plots
+%     subplot(2,2,[3,4]); plot(x,nd,'k','LineWidth',1); 
+%     xlabel('$x$'); ylabel('$n_d$'); title('$n_d(x,t$)');
+%     xlim([0 nL]); ylim([-oft 1+oft])    
+%     % Timer 1: current time step value
+%     text('Interpreter','latex',...
+%     'String',['time step: ' num2str(step) '/' num2str(length(dt:dt:tfin))],...
+%     'Position',[0.2 .6],...
+%     'FontSize',10, 'color','b', 'interpreter','latex')
+%     % Timer 2:  current time value
+%     text('Interpreter','latex',...
+%     'String',['time: ' num2str(t,'%2.2f\n') ' : ' num2str(tfin)],...
+%     'Position',[.6 .5],...
+%     'FontSize',10, 'color','b', 'interpreter','latex')
+%     
+%     subplot(2,2,2); plot(x,vd,'k','LineWidth',1); 
+%     xlabel('$x$'); ylabel('$v_d$'); title('$v_d(x,t)$');  
+%     xlim([0 nL]); 
+% 
+% 	subplot(2,2,1); plot(x,ne,x,E); %,'k','LineWidth',1); 
+%     xlabel('$x$'); ylabel('$n_e,\,E$'); title('$n_e(x,t),\,E(x,t)$');
+%     xlim([0 nL]); 
+%     
+%     % Draw data on current Figure
+%     drawnow      
 end
+
+figure(2),
+plot(1:nstep, vR, 'LineWidth', 2)
+xlabel('number of time steps'); ylabel('$v_d|_{x=xR}$')

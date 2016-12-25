@@ -10,5 +10,5 @@ eta(1) = 4e-4;
 % clear x
 disp('runge4 solver processing...')
 
-ne  = y(:,1);
-E   = y(:,2); % * (1.2 / max(y(:,2)));
+ne  = y(:,1)';
+E   = y(:,2)'; % * (1.2 / max(y(:,2)));

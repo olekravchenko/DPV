@@ -20,3 +20,4 @@ for ind = L
     ne(ind+1)   =   ne(ind) - ti_inv * dx * ne(ind) .* E(ind);
     E(ind+1)    =   E(ind) + dx * (1 - ne(ind) - nd(ind));
 end
+E = E';

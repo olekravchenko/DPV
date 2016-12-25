@@ -40,7 +40,7 @@ clear all; close all; clc;
 addpath(genpath('D:\GitHub\DPV\ABH Model'));
 % Set Default Figure Options
 set(0,'DefaultTextInterpreter','latex')
-set(0,'DefaultAxesFontSize',13)
+set(0,'DefaultAxesFontSize',14)
 
 %% Simulation Parameters
 nx      = 2^6;                                  % Number of grid points
@@ -141,29 +141,29 @@ while t<tfin
     step = step + 1;    
     disp(['dt = ' num2str(t,'%2.2f\n') ' over ' num2str(tfin) '  step:' num2str(step)])
     
-    %% Plots
-    subplot(2,2,[3,4]); plot(x,nd,'k','LineWidth',1); 
-    xlabel('$x$'); ylabel('$n_d$'); title('$n_d(x,t$)');
-    xlim([0 nL]); ylim([-oft 1+oft])    
-    % Timer 1: current time step value
-    text('Interpreter','latex',...
-    'String',['time step: ' num2str(step) '/' num2str(length(dt:dt:tfin))],...
-    'Position',[0.2 .6],...
-    'FontSize',10, 'color','b', 'interpreter','latex')
-    % Timer 2:  current time value
-    text('Interpreter','latex',...
-    'String',['time: ' num2str(t,'%2.2f\n') ' : ' num2str(tfin)],...
-    'Position',[.6 .5],...
-    'FontSize',10, 'color','b', 'interpreter','latex')
-    
-    subplot(2,2,2); plot(x,vd,'k','LineWidth',1); 
-    xlabel('$x$'); ylabel('$v_d$'); title('$v_d(x,t)$');  
-    xlim([0 nL]); 
-
-	subplot(2,2,1); plot(x,ne,x,E); %,'k','LineWidth',1); 
-    xlabel('$x$'); ylabel('$n_e,\,E$'); title('$n_e(x,t),\,E(x,t)$');
-    xlim([0 nL]); 
-    
-    % Draw data on current Figure
-    drawnow      
+%     %% Plots
+%     subplot(2,2,[3,4]); plot(x,nd,'k','LineWidth',1); 
+%     xlabel('$x$'); ylabel('$n_d$'); title('$n_d(x,t$)');
+%     xlim([0 nL]); ylim([-oft 1+oft])    
+%     % Timer 1: current time step value
+%     text('Interpreter','latex',...
+%     'String',['time step: ' num2str(step) '/' num2str(length(dt:dt:tfin))],...
+%     'Position',[0.2 .6],...
+%     'FontSize',10, 'color','b', 'interpreter','latex')
+%     % Timer 2:  current time value
+%     text('Interpreter','latex',...
+%     'String',['time: ' num2str(t,'%2.2f\n') ' : ' num2str(tfin)],...
+%     'Position',[.6 .5],...
+%     'FontSize',10, 'color','b', 'interpreter','latex')
+%     
+%     subplot(2,2,2); plot(x,vd,'k','LineWidth',1); 
+%     xlabel('$x$'); ylabel('$v_d$'); title('$v_d(x,t)$');  
+%     xlim([0 nL]); 
+% 
+% 	subplot(2,2,1); plot(x,ne,x,E); %,'k','LineWidth',1); 
+%     xlabel('$x$'); ylabel('$n_e,\,E$'); title('$n_e(x,t),\,E(x,t)$');
+%     xlim([0 nL]); 
+%     
+%     % Draw data on current Figure
+%     drawnow      
 end
